@@ -129,7 +129,7 @@ CUSTOM_CSS = """
 }
 """
 
-with gr.Blocks(title="Timeline Architect", css=CUSTOM_CSS) as demo:
+with gr.Blocks(title="Timeline Architect", css=CUSTOM_CSS, theme=gr.themes.Soft()) as demo:
     gr.Markdown(
         """
 # 🏛️ Timeline Architect
@@ -259,4 +259,4 @@ If the URL contains a `?v=...` part, stop before the `?`.
     gr.Markdown("---\n*Timeline Architect — 鵝啟田之少女事件簿計畫*")
 
 if __name__ == "__main__":
-    demo.launch(share=False, theme=gr.themes.Soft())
+    demo.launch(share=False)
