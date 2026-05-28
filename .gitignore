@@ -1,0 +1,19 @@
+# 環境變數與憑證——絕對不能上傳
+.env
+
+# 診斷工具與內部文件——不需要部署
+diag.py
+Christa_Pike_Test_Pack.md
+how_to_handover.md
+Timeline_Architect_Prompt.md
+Overall_Project_Scheme_Prompt.md
+
+# Python 暫存檔
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# 系統檔
+.DS_Store
+Thumbs.db
