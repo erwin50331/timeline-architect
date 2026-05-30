@@ -1,7 +1,7 @@
-notion-client>=2.2.0
-trafilatura>=1.12.0
-newspaper3k>=0.2.8
-anthropic>=0.40.0
-python-dotenv>=1.0.0
-lxml_html_clean>=0.1.0
-gradio>=5.29.0
+notion-client>=2.2.0 #串接 Notion API，用來讀寫 Notion 資料庫/頁面
+trafilatura>=1.12.0 #網頁爬蟲，抓取網頁內容並清洗成純文字
+newspaper3k>=0.2.8 #網頁爬蟲，抓取網頁內容並清洗成純文字（特別適合新聞網站）
+anthropic>=0.40.0 #串接 Anthropic API，使用 Claude 模型進行自然語言處理
+python-dotenv>=1.0.0 #讀取 .env 檔案中的環境變數
+lxml_html_clean>=0.1.0 #清洗 HTML 內容，去除不必要的標籤和屬性
+gradio>=5.29.0 #建立網頁介面，讓使用者可以方便地與應用程式互動
