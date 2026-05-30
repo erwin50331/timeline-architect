@@ -1,6 +1,10 @@
 # 環境變數與憑證——絕對不能上傳
 .env
 
+# 匯出的文件格式——不需要部署
+*.pdf
+*.html
+
 # 診斷工具與內部文件——不需要部署
 diag.py
 Christa_Pike_Test_Pack.md
