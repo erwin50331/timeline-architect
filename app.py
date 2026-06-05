@@ -222,7 +222,7 @@ If the URL contains a `?v=...` part, stop before the `?`.
                 """
 > Don't have an Anthropic API key? Sign up at
 > [console.anthropic.com](https://console.anthropic.com) → add a credit card → create an API key.
-> Using your own key means **you control your own costs** (~$0.20–0.50 USD per run).
+> Using your own key means **you control your own costs** (typically $0.20–0.70 USD per run, up to ~$3 for very large cases).
 > If you leave this blank, the operator's shared key will be used instead.
                 """
             )
