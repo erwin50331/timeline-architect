@@ -95,9 +95,17 @@ def run_pipeline(
 
         # === Module C ===
         log("🧠 [C] 呼叫 LLM 萃取時間軸（約 30–60 秒）...")
-        raw_events = extractor.extract_timeline(all_sources, model=_LLM_MODEL)
+        raw_events, llm_info = extractor.extract_timeline(all_sources, model=_LLM_MODEL)
         events = extractor.deduplicate(raw_events)
         log(f"   → LLM 回 {len(raw_events)} 筆，去重後剩 {len(events)} 筆")
+
+        # Token 用量與費用估算（Sonnet: $3/1M input, $15/1M output）
+        in_tok = llm_info["input_tokens"]
+        out_tok = llm_info["output_tokens"]
+        cost = in_tok * 3 / 1_000_000 + out_tok * 15 / 1_000_000
+        log(f"   → 本次用量：{in_tok:,} input + {out_tok:,} output tokens｜預估花費 ${cost:.3f} USD")
+        for w in llm_info.get("truncation_warnings", []):
+            log(f"   {w}")
 
         # === Dry Run ===
         if dry_run:

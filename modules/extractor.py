@@ -100,34 +100,63 @@ TOOL_SCHEMA = {
 }
 
 
-def build_user_message(sources: list[tuple[str, str]]) -> str:
-    """將 (source_ref, body_text) 序列組為單一帶標籤的 user message。"""
+# 安全上限：約 187,500 tokens，遠低於 200k context window
+# 依來源數量平均分配，避免單篇長文獨佔預算
+MAX_TOTAL_CHARS = 750_000
+
+
+def build_user_message(sources: list[tuple[str, str]]) -> tuple[str, list[str]]:
+    """
+    將 (source_ref, body_text) 序列組為單一帶標籤的 user message。
+    回傳 (message_str, truncation_warnings)。
+    """
     parts = ["Please extract the timeline from the following source materials.\n"]
-    for ref, body in sources:
-        parts.append(f"\n=== SOURCE: {ref} ===\n{body.strip()}\n")
+    warnings: list[str] = []
+
+    if sources:
+        per_source_budget = MAX_TOTAL_CHARS // len(sources)
+        for ref, body in sources:
+            body = body.strip()
+            if len(body) > per_source_budget:
+                original_len = len(body)
+                body = body[:per_source_budget]
+                short_ref = ref if len(ref) <= 60 else ref[:57] + "..."
+                warnings.append(
+                    f"⚠ '{short_ref}' 被截斷：{original_len:,} → {per_source_budget:,} 字元"
+                )
+                print(
+                    f"  ⚠ Truncated '{short_ref}': {original_len:,} → {per_source_budget:,} chars",
+                    file=sys.stderr,
+                )
+            parts.append(f"\n=== SOURCE: {ref} ===\n{body}\n")
+
     parts.append(
         "\nNow extract every dateable event via the `submit_timeline` tool. "
         "Return events sorted chronologically (oldest first)."
     )
-    return "".join(parts)
+    return "".join(parts), warnings
 
 
 def extract_timeline(
     sources: list[tuple[str, str]],
     model: str | None = None,
     max_retries: int = 1,
-) -> list[dict]:
+) -> tuple[list[dict], dict]:
     """
     主入口：呼叫 LLM 取得結構化時間軸事件。
     sources: [(source_ref, body_text), ...]
-    回傳: list of {Date, Event, Phase, Source_Ref}
+    回傳: (events, info)
+      events: list of {Date, Event, Phase, Source_Ref}
+      info:   {"input_tokens": int, "output_tokens": int, "truncation_warnings": list[str]}
     """
+    empty_info: dict = {"input_tokens": 0, "output_tokens": 0, "truncation_warnings": []}
+
     if not sources:
-        return []
+        return [], empty_info
 
     client = Anthropic(api_key=os.environ["LLM_API_KEY"])
     model = model or os.environ.get("LLM_MODEL", "claude-sonnet-4-6")
-    user_message = build_user_message(sources)
+    user_message, truncation_warnings = build_user_message(sources)
 
     for attempt in range(max_retries + 1):
         try:
@@ -139,9 +168,15 @@ def extract_timeline(
                 tool_choice={"type": "tool", "name": "submit_timeline"},
                 messages=[{"role": "user", "content": user_message}],
             )
+            info = {
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+                "truncation_warnings": truncation_warnings,
+            }
             for block in response.content:
                 if block.type == "tool_use" and block.name == "submit_timeline":
-                    return block.input.get("events", [])
+                    block_input = block.input if isinstance(block.input, dict) else {}
+                    return block_input.get("events", []), info
             print(
                 f"  ⚠ LLM 未呼叫指定 tool (attempt {attempt + 1})",
                 file=sys.stderr,
@@ -153,7 +188,7 @@ def extract_timeline(
             )
 
     print("  ❌ LLM 萃取最終失敗，返回空 list", file=sys.stderr)
-    return []
+    return [], {**empty_info, "truncation_warnings": truncation_warnings}
 
 
 def deduplicate(events: list[dict]) -> list[dict]:
